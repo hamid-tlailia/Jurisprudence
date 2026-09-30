@@ -1,0 +1,144 @@
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { MessageSquarePlus, Sparkles, Trash2 } from "lucide-react";
+import { useChat } from "../hooks/useChat";
+import { useStore, type Chat } from "../lib/store";
+import { ChatThread } from "../components/ChatThread";
+
+const SUGGESTIONS = [
+  "ما الفرق بين الفرض والواجب عند الحنفية والجمهور؟",
+  "اشرح لي شروط الحديث الصحيح بمثال.",
+  "ما الحكمة من مشروعية التيمم؟",
+  "كيف أبدأ طلب علم الفقه؟ ضع لي خطة متدرجة.",
+  "ما معنى قاعدة «المشقة تجلب التيسير» وما أمثلتها؟",
+  "اختبرني في أقسام الحديث الضعيف.",
+];
+
+const newId = () => Math.random().toString(36).slice(2, 10);
+
+export default function TutorPage() {
+  const chats = useStore((s) => s.chats);
+  const saveChat = useStore((s) => s.saveChat);
+  const deleteChat = useStore((s) => s.deleteChat);
+  const [activeId, setActiveId] = useState<string>(() => newId());
+  const chat = useChat([]);
+
+  // حفظ المحادثة بعد انتهاء كل رد
+  useEffect(() => {
+    if (chat.streaming || chat.messages.length < 2) return;
+    const last = chat.messages[chat.messages.length - 1];
+    if (last.role !== "assistant" || !last.content) return;
+    const existing = useStore.getState().chats.find((c) => c.id === activeId);
+    const c: Chat = {
+      id: activeId,
+      title: existing?.title ?? chat.messages[0].content.slice(0, 60),
+      messages: chat.messages,
+      updatedAt: Date.now(),
+    };
+    saveChat(c);
+  }, [chat.streaming, chat.messages, activeId, saveChat]);
+
+  const openChat = (c: Chat) => {
+    setActiveId(c.id);
+    chat.reset(c.messages);
+  };
+
+  const fresh = () => {
+    setActiveId(newId());
+    chat.reset([]);
+  };
+
+  return (
+    <div className="page" style={{ paddingBottom: 90 }}>
+      <div className="grid" style={{ gridTemplateColumns: "minmax(0, 1fr)", gap: 20 }}>
+        <div className="tutor-layout">
+          <aside className="tutor-history card" aria-label="المحادثات السابقة">
+            <button className="btn btn-primary" onClick={fresh} style={{ width: "100%" }}>
+              <MessageSquarePlus size={17} /> محادثة جديدة
+            </button>
+            <div className="stack-sm" style={{ marginTop: 12, gap: 2 }}>
+              {chats.length === 0 && <p className="tiny muted" style={{ padding: 8 }}>لا محادثات محفوظة بعد.</p>}
+              <AnimatePresence initial={false}>
+                {chats.map((c) => (
+                  <motion.div
+                    key={c.id}
+                    layout
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className={`history-item ${c.id === activeId ? "on" : ""}`}
+                  >
+                    <button onClick={() => openChat(c)} className="history-title">
+                      {c.title}
+                    </button>
+                    <button
+                      className="icon-btn"
+                      style={{ width: 30, height: 30 }}
+                      aria-label="حذف المحادثة"
+                      onClick={() => {
+                        deleteChat(c.id);
+                        if (c.id === activeId) fresh();
+                      }}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </aside>
+
+          <section className="card tutor-main">
+            <div className="ai-head">
+              <div className={`ai-orb ${chat.streaming ? "thinking" : ""}`}>
+                <Sparkles size={18} />
+              </div>
+              <div>
+                <h1 className="title-md">المُعين</h1>
+                <p className="tiny muted">مساعدك في الفقه وأصوله والحديث وعلومه</p>
+              </div>
+              <button className="icon-btn" style={{ marginInlineStart: "auto" }} onClick={fresh} aria-label="محادثة جديدة" title="محادثة جديدة">
+                <MessageSquarePlus size={19} />
+              </button>
+            </div>
+            <ChatThread
+              messages={chat.messages}
+              streaming={chat.streaming}
+              error={chat.error}
+              onSend={(t) => chat.send(t)}
+              onStop={chat.stop}
+              empty={
+                <div className="stack" style={{ alignItems: "center", textAlign: "center", padding: "24px 8px" }}>
+                  <motion.div
+                    className="ai-orb"
+                    style={{ width: 64, height: 64, borderRadius: 20 }}
+                    animate={{ rotate: [0, 6, -6, 0] }}
+                    transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <Sparkles size={28} />
+                  </motion.div>
+                  <h2 className="title-lg" style={{ fontFamily: "var(--font-classic)", fontSize: "1.7rem" }}>
+                    سَلْ تَعْلَمْ
+                  </h2>
+                  <p className="muted small" style={{ maxWidth: 420 }}>
+                    اسأل عن مسألة فقهية أو قاعدة أصولية أو مصطلح حديثي، وسيجيبك المُعين بشرح منهجي مع ذكر الأدلة والأقوال.
+                  </p>
+                  <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 8, width: "100%", marginTop: 8 }}>
+                    {SUGGESTIONS.map((q) => (
+                      <button key={q} className="suggestion" onClick={() => chat.send(q)}>
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              }
+            />
+            <p className="tiny muted" style={{ padding: "0 16px 12px", textAlign: "center" }}>
+              المُعين أداة تعليمية مولَّدة بالذكاء الاصطناعي، وقد يخطئ؛ فتحقق من المسائل المهمة عند أهل العلم.
+            </p>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
