@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { motion } from "motion/react";
-import { Lock } from "lucide-react";
+import { Info, Lock } from "lucide-react";
 import { allLessons, allMasail } from "../data";
 import { useStore } from "../lib/store";
 import { BADGES, RANKS, currentStreak, lastDays, levelFor, longestStreak } from "../lib/progress";
@@ -7,9 +8,11 @@ import { dateMedium, num } from "../lib/format";
 import { NamedIcon } from "../components/Icon";
 import { Bar, ProgressRing } from "../components/ProgressRing";
 import { stagger } from "../components/Reveal";
+import { PointsInfo } from "../components/PointsInfo";
 
 export default function AchievementsPage() {
   const s = useStore();
+  const [pointsOpen, setPointsOpen] = useState(false);
   const lvl = levelFor(s.xp);
   const days = lastDays(s.activity, 7 * 18);
   const earned = BADGES.filter((b) => s.badges[b.id]).length;
@@ -45,6 +48,9 @@ export default function AchievementsPage() {
               {lvl.title}
             </h2>
             <p className="ink-2">{num(s.xp)} نقطة</p>
+            <button className="btn btn-ghost btn-sm" onClick={() => setPointsOpen(true)}>
+              <Info size={14} /> ما فائدة النقاط؟
+            </button>
             {lvl.next ? (
               <p className="small muted">
                 بقي {num(lvl.toNext)} نقطة لبلوغ رتبة «{lvl.next.title}»
@@ -114,6 +120,7 @@ export default function AchievementsPage() {
           );
         })}
       </motion.div>
+      <PointsInfo open={pointsOpen} onClose={() => setPointsOpen(false)} />
     </div>
   );
 }

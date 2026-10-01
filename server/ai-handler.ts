@@ -11,8 +11,9 @@ export async function handleAiRequest(
 ): Promise<Response> {
   if (request.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
   if (!apiKey) {
+    console.error("[ai] GEMINI_API_KEY is not set");
     return Response.json(
-      { error: "لم يُضبط مفتاح GEMINI_API_KEY على الخادم. أضفه في متغيرات البيئة، أو أدخل مفتاح Gemini الخاص بك من الإعدادات." },
+      { error: "المُعين غير مفعّل على هذا الخادم بعد." },
       { status: 503 },
     );
   }

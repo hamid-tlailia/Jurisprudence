@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
-import { ArrowLeft, Check, Flame, Lightbulb, RotateCcw, Share2, Sparkles, Target } from "lucide-react";
+import { ArrowLeft, Check, Flame, Info, Lightbulb, RotateCcw, Share2, Sparkles, Target } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { allLessons, getLesson, getMasala, nextInWing, wingLessons, wingList, type Wing } from "../data";
 import type { PlanTask } from "../data/plans";
@@ -11,6 +11,7 @@ import { durationLabel, greeting, hijriDate, lessonsLabel, minutesLabel, num, pc
 import { useAiPanel } from "../lib/aiPanel";
 import { Bar, ProgressRing } from "../components/ProgressRing";
 import { ShareSheet } from "../components/ShareSheet";
+import { PointsInfo } from "../components/PointsInfo";
 import { stagger } from "../components/Reveal";
 
 export default function Home() {
@@ -22,6 +23,7 @@ export default function Home() {
   const todayXp = activity[dayKey()] ?? 0;
   const week = lastDays(activity, 7);
   const isNew = Object.keys(completed).length === 0;
+  const [pointsOpen, setPointsOpen] = useState(false);
 
   return (
     <div className="page">
@@ -60,10 +62,12 @@ export default function Home() {
                 </span>
                 <span className="stat-label">أيام متتالية</span>
               </div>
-              <div className="stat" style={{ alignItems: "center" }}>
+              <button className="stat" style={{ alignItems: "center" }} onClick={() => setPointsOpen(true)} aria-label="ما فائدة النقاط؟">
                 <span className="stat-value">{num(xp)}</span>
-                <span className="stat-label">مجموع النقاط</span>
-              </div>
+                <span className="stat-label row" style={{ gap: 4 }}>
+                  مجموع النقاط <Info size={12} />
+                </span>
+              </button>
               <div className="stat" style={{ alignItems: "center" }}>
                 <span className="stat-value">{num(lvl.level)}</span>
                 <span className="stat-label">{lvl.title}</span>
@@ -142,6 +146,7 @@ export default function Home() {
           <ReviewQuestion />
         </motion.div>
       </motion.div>
+      <PointsInfo open={pointsOpen} onClose={() => setPointsOpen(false)} />
     </div>
   );
 }

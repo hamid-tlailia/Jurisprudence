@@ -1,11 +1,11 @@
 import { ApiError, FinishReason, GoogleGenAI, type Content } from "@google/genai";
 
 /**
- * نواة المُعين: التعليمات، وبناء الرسائل، والبث المتدفق من Gemini.
- * مشتركة بين الخادم (دالة Vercel / Vite) والمتصفح (عند استخدام مفتاح المستخدم).
+ * نواة المُعين: التعليمات، وبناء الرسائل، والبث المتدفق.
+ * تعمل على الخادم فقط، والمفتاح محفوظ في متغيرات البيئة.
  */
 
-/** نموذج مجاني مستقر على الطبقة المجانية لواجهة Gemini */
+/** النموذج المفضل (من الطبقة المجانية) */
 export const DEFAULT_MODEL = "gemini-3.8-flash";
 
 export const SYSTEM_PROMPT = `أنت «المُعين»، مساعد تعليمي في منصة «الرواق» لتعليم الفقه الإسلامي وأصوله، والحديث النبوي وعلومه.
@@ -17,6 +17,7 @@ export const SYSTEM_PROMPT = `أنت «المُعين»، مساعد تعليم�
 - إذا لم تكن متأكداً من معلومة فقل ذلك صراحة، وانصح بالرجوع إلى المصادر أو أهل العلم.
 - أنت معلّم لا مُفتٍ: في النوازل الشخصية الدقيقة (الطلاق، المواريث المعقدة، المعاملات المالية الخاصة ونحوها) تشرح الأحكام العامة ثم تنصح بسؤال عالم موثوق في بلد السائل.
 - إذا طُلب منك اختبار أو أمثلة فاجعلها متدرجة ونافعة، وصحّح أخطاء الطالب برفق.
+- إن سُئلت عن هويتك أو التقنية التي تعمل بها، فقل: أنا «المُعين»، مساعد الرواق التعليمي، ولا تذكر اسم شركة أو نموذج.
 - لا تخرج عن نطاق العلوم الشرعية وما يخدمها (اللغة، التاريخ الإسلامي، مناهج الطلب) إلا بلطف واختصار.`;
 
 const MODE_HINTS: Record<string, string> = {
@@ -70,31 +71,72 @@ export function buildContents(req: AiRequestBody): Content[] {
   });
 }
 
-/** يرسل الطلب إلى Gemini ويعيد تياراً نصياً. */
-export function streamAnswer(apiKey: string, req: AiRequestBody, model = DEFAULT_MODEL): ReadableStream<Uint8Array> {
+/** النماذج المجانية بالترتيب: يُنتقل إلى التالي إذا كان السابق مشغولاً أو غير متاح */
+export const FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash", "gemini-2.5-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash-lite"];
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** أخطاء عابرة تستحق إعادة المحاولة بنموذج آخر */
+function isRetryable(err: unknown): boolean {
+  if (err instanceof ApiError) return err.status === 429 || err.status === 404 || err.status >= 500;
+  return true; // انقطاع الشبكة ونحوه
+}
+
+/**
+ * يرسل الطلب ويعيد تياراً نصياً.
+ * - يجرّب النماذج بالترتيب عند الانشغال أو تجاوز الحد.
+ * - إذا انقطعت الإجابة في منتصفها، يطلب من النموذج التالي إكمالها من حيث توقفت.
+ */
+export function streamAnswer(apiKey: string, req: AiRequestBody, preferred = DEFAULT_MODEL, baseUrl?: string): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey, ...(baseUrl ? { httpOptions: { baseUrl } } : {}) });
+  const models = [preferred, ...FALLBACK_MODELS.filter((m) => m !== preferred)];
+  const base = buildContents(req);
+
   return new ReadableStream<Uint8Array>({
     async start(controller) {
+      let produced = "";
+      let lastErr: unknown = null;
       try {
-        const stream = await ai.models.generateContentStream({
-          model,
-          contents: buildContents(req),
-          config: { systemInstruction: SYSTEM_PROMPT, temperature: 0.4, maxOutputTokens: 8192 },
-        });
-        let finish: FinishReason | undefined;
-        for await (const chunk of stream) {
-          const text = chunk.text;
-          if (text) controller.enqueue(encoder.encode(text));
-          finish = chunk.candidates?.[0]?.finishReason ?? finish;
+        for (let attempt = 0; attempt < models.length; attempt++) {
+          const model = models[attempt];
+          // عند الاستئناف: نعطي النموذج ما كُتب ونطلب الإكمال دون تكرار
+          const contents: Content[] = produced
+            ? [
+                ...base,
+                { role: "model", parts: [{ text: produced }] },
+                { role: "user", parts: [{ text: "انقطعت إجابتك. أكمل من الموضع الذي توقفت عنده بالضبط، دون تكرار ما سبق ودون مقدمة." }] },
+              ]
+            : base;
+          try {
+            const stream = await ai.models.generateContentStream({
+              model,
+              contents,
+              config: { systemInstruction: SYSTEM_PROMPT, temperature: 0.4, maxOutputTokens: 8192 },
+            });
+            let finish: FinishReason | undefined;
+            for await (const chunk of stream) {
+              const text = chunk.text;
+              if (text) {
+                produced += text;
+                controller.enqueue(encoder.encode(text));
+              }
+              finish = chunk.candidates?.[0]?.finishReason ?? finish;
+            }
+            if (finish === FinishReason.MAX_TOKENS) {
+              controller.enqueue(encoder.encode("\n\n> (انتهى الحد الأقصى لطول الإجابة — اطلب المتابعة لإكمالها.)"));
+            } else if (finish === FinishReason.SAFETY || (!produced && finish && finish !== FinishReason.STOP)) {
+              controller.enqueue(encoder.encode("\n\n> تعذّر إكمال الإجابة عن هذا الطلب. جرّب صياغة السؤال بطريقة أخرى."));
+            }
+            return;
+          } catch (err) {
+            lastErr = err;
+            console.error(`[ai] model=${model} failed`, err instanceof ApiError ? `${err.status} ${err.message.slice(0, 300)}` : String(err));
+            if (!isRetryable(err)) break;
+            await sleep(Math.min(400 * (attempt + 1), 1500));
+          }
         }
-        if (finish === FinishReason.MAX_TOKENS) {
-          controller.enqueue(encoder.encode("\n\n> (انتهى الحد الأقصى لطول الإجابة — اطلب المتابعة لإكمالها.)"));
-        } else if (finish === FinishReason.SAFETY) {
-          controller.enqueue(encoder.encode("\n\n> تعذّر إكمال الإجابة عن هذا الطلب. جرّب صياغة السؤال بطريقة أخرى."));
-        }
-      } catch (err) {
-        controller.enqueue(encoder.encode(`\n\n> ${describeError(err)}`));
+        controller.enqueue(encoder.encode(`\n\n> ${describeError(lastErr)}`));
       } finally {
         controller.close();
       }
@@ -102,13 +144,12 @@ export function streamAnswer(apiKey: string, req: AiRequestBody, model = DEFAULT
   });
 }
 
+/** رسائل خطأ لا تذكر مزوّد الخدمة: المستخدم يتعامل مع «المُعين» فقط */
 export function describeError(err: unknown): string {
   if (err instanceof ApiError) {
-    if (err.status === 400 || err.status === 401 || err.status === 403) return "مفتاح Gemini غير صالح أو لا يملك صلاحية لهذا النموذج.";
-    if (err.status === 429) return "تجاوزت حدّ الطلبات المجانية مؤقتاً، حاول بعد قليل.";
-    if (err.status >= 500) return "خدمة Gemini مشغولة حالياً، حاول بعد قليل.";
-    return `حدث خطأ في خدمة الذكاء الاصطناعي (${err.status}).`;
+    if (err.status === 429) return "المُعين مشغول بكثرة الأسئلة الآن، أعد المحاولة بعد دقيقة.";
+    if (err.status >= 500) return "المُعين مشغول حالياً، أعد المحاولة بعد قليل.";
+    return "تعذّر على المُعين الإجابة الآن، أعد المحاولة لاحقاً.";
   }
-  if (err instanceof TypeError) return "تعذّر الاتصال بخدمة الذكاء الاصطناعي.";
-  return "حدث خطأ غير متوقع أثناء توليد الإجابة.";
+  return "تعذّر الاتصال بالمُعين، تحقق من الاتصال وأعد المحاولة.";
 }

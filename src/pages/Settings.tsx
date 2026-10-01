@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { Eye, EyeOff, ExternalLink, KeyRound, Palette, RotateCcw, Type, User } from "lucide-react";
+import { Palette, RotateCcw, Type, User } from "lucide-react";
 import { useStore } from "../lib/store";
 import { ThemeSegmented } from "../components/ThemeSwitch";
 import { num } from "../lib/format";
@@ -17,7 +17,6 @@ export default function SettingsPage() {
   const setSettings = useStore((s) => s.setSettings);
   const resetProgress = useStore((s) => s.resetProgress);
   const xp = useStore((s) => s.xp);
-  const [showKey, setShowKey] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
 
   return (
@@ -48,30 +47,6 @@ export default function SettingsPage() {
 
         <Section icon={<User size={19} />} title="الاسم" hint="يظهر في التحية على الصفحة الرئيسية.">
           <input className="input" value={settings.name} placeholder="اسمك" onChange={(e) => setSettings({ name: e.target.value })} maxLength={40} />
-        </Section>
-
-        <Section
-          icon={<KeyRound size={19} />}
-          title="مفتاح Gemini (مجاني — اختياري)"
-          hint="يعمل المُعين بنموذج Gemini من Google. إن لم يكن الخادم مهيّأً بمفتاح، فأنشئ مفتاحاً مجانياً من Google AI Studio وألصقه هنا؛ يُحفظ في متصفحك فقط ويُرسل مباشرة إلى Google."
-        >
-          <div className="row">
-            <input
-              className="input"
-              dir="ltr"
-              type={showKey ? "text" : "password"}
-              value={settings.userApiKey}
-              placeholder="AIza…"
-              autoComplete="off"
-              onChange={(e) => setSettings({ userApiKey: e.target.value.trim() })}
-            />
-            <button className="icon-btn" onClick={() => setShowKey((v) => !v)} aria-label={showKey ? "إخفاء المفتاح" : "إظهار المفتاح"}>
-              {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
-          <a className="small row" style={{ gap: 6, color: "var(--accent)", fontWeight: 600 }} href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">
-            <ExternalLink size={14} /> احصل على مفتاح مجاني من Google AI Studio
-          </a>
         </Section>
 
         <Section icon={<RotateCcw size={19} />} title="إعادة ضبط التقدم" hint={`سيُحذف تقدمك كله (${num(xp)} نقطة، والدروس، والأوسمة). لا يمكن التراجع.`}>
