@@ -21,7 +21,6 @@ type Settings = {
   theme: ThemeMode;
   fontScale: number;
   name: string;
-  userApiKey: string;
   showTashkeelHints: boolean;
 };
 
@@ -107,7 +106,7 @@ export const useStore = create<Store>()(
   persist(
     (set, get) => ({
       ...initialProgress,
-      settings: { theme: "auto", fontScale: 1, name: "", userApiKey: "", showTashkeelHints: true },
+      settings: { theme: "auto", fontScale: 1, name: "", showTashkeelHints: true },
       chats: [],
       toasts: [],
       onboarded: false,
@@ -165,7 +164,14 @@ export const useStore = create<Store>()(
     }),
     {
       name: "riwaq-v1",
+      version: 1,
       storage: createJSONStorage(() => localStorage),
+      // الإصدار 1: حذف مفتاح الذكاء الاصطناعي الذي كان يُحفظ في المتصفح
+      migrate: (persisted) => {
+        const p = persisted as { settings?: Record<string, unknown> } | undefined;
+        if (p?.settings) delete p.settings.userApiKey;
+        return p as never;
+      },
       partialize: (s) => {
         // التنبيهات مؤقتة لا تُحفظ
         const { toasts: _t, ...rest } = s;

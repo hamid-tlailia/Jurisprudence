@@ -14,7 +14,7 @@ export function useThemeEffect() {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const apply = () => {
       const dark = theme === "dark" || (theme === "auto" && mq.matches);
-      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#0c1311" : "#f5f0e6");
+      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#111a18" : "#f5f0e6");
     };
     apply();
     mq.addEventListener("change", apply);
