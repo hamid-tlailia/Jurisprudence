@@ -8,13 +8,25 @@ export type Question = {
 
 export type Section = { heading: string; body: string };
 
+/** نص المتن المشروح في الدرس: بيت أو حديث أو فقرة */
+export type Matn = { kind: "verse" | "hadith" | "prose"; text: string; source?: string };
+
+export type Vocab = { term: string; meaning: string };
+export type Example = { title: string; body: string };
+/** تدريب مفتوح يُكشف جوابه */
+export type Exercise = { q: string; a: string };
+
 export type Lesson = {
   id: string;
   title: string;
   minutes: number;
   summary: string;
+  matn?: Matn;
+  vocab?: Vocab[];
   sections: Section[];
+  examples?: Example[];
   keyPoints: string[];
+  exercises?: Exercise[];
   quiz: Question[];
   /** إحالة إلى موضع من المكتبة لمزيد القراءة */
   ref?: { bookId: string; masalaId?: string };
@@ -22,13 +34,17 @@ export type Lesson = {
 
 export type Unit = { id: string; title: string; lessons: Lesson[] };
 
+export type WingId = "fiqh" | "hadith";
 export type TrackId = "fiqh" | "usul" | "hadith" | "mustalah";
 
 export type Track = {
   id: TrackId;
+  wing: WingId;
   title: string;
   tagline: string;
   description: string;
+  /** الكتب المعتمدة التي استُفيد منها المسار */
+  sources: string[];
   units: Unit[];
 };
 

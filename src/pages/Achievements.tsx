@@ -3,7 +3,7 @@ import { Lock } from "lucide-react";
 import { allLessons, allMasail } from "../data";
 import { useStore } from "../lib/store";
 import { BADGES, RANKS, currentStreak, lastDays, levelFor, longestStreak } from "../lib/progress";
-import { num } from "../lib/format";
+import { dateMedium, num } from "../lib/format";
 import { NamedIcon } from "../components/Icon";
 import { Bar, ProgressRing } from "../components/ProgressRing";
 import { stagger } from "../components/Reveal";
@@ -33,14 +33,14 @@ export default function AchievementsPage() {
 
       <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="card hero" style={{ marginBottom: 20 }}>
         <div className="pattern" />
-        <div className="row" style={{ position: "relative", gap: 24, flexWrap: "wrap" }}>
-          <ProgressRing value={lvl.progress} size={140} stroke={11} color="var(--gold)">
+        <div className="stack" style={{ position: "relative", alignItems: "center", textAlign: "center" }}>
+          <ProgressRing value={lvl.progress} size={160} stroke={13} color="var(--gold)">
             <div>
-              <div className="tiny muted">المستوى</div>
-              <div style={{ fontSize: "2.2rem", fontWeight: 700, lineHeight: 1.1, fontFamily: "var(--font-classic)" }}>{num(lvl.level)}</div>
+              <div className="ring-label" style={{ marginTop: 0 }}>المستوى</div>
+              <div className="ring-value" style={{ fontSize: "2.6rem" }}>{num(lvl.level)}</div>
             </div>
           </ProgressRing>
-          <div className="stack-sm" style={{ flex: 1, minWidth: 220 }}>
+          <div className="stack-sm" style={{ alignItems: "center" }}>
             <h2 className="title-lg" style={{ fontFamily: "var(--font-classic)", fontSize: "1.8rem" }}>
               {lvl.title}
             </h2>
@@ -52,7 +52,7 @@ export default function AchievementsPage() {
             ) : (
               <p className="small muted">بلغت أعلى الرتب — زادك الله علماً.</p>
             )}
-            <div className="row" style={{ gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+            <div className="row" style={{ gap: 6, flexWrap: "wrap", marginTop: 6, justifyContent: "center" }}>
               {RANKS.map((r, i) => (
                 <span key={r.title} className={`chip ${i < lvl.level ? "chip-gold" : ""}`} title={`${num(r.min)} نقطة`}>
                   {r.title}
@@ -83,7 +83,7 @@ export default function AchievementsPage() {
       <section className="card card-pad stack" style={{ marginBottom: 20 }}>
         <div className="row-between">
           <h2 className="title-md">خريطة المداومة</h2>
-          <span className="tiny muted">آخر ١٨ أسبوعاً</span>
+          <span className="tiny muted">آخر 18 أسبوعاً</span>
         </div>
         <div className="heatmap">
           {days.map((d) => {
@@ -109,7 +109,7 @@ export default function AchievementsPage() {
               </motion.div>
               <div style={{ fontWeight: 700 }}>{b.title}</div>
               <div className="tiny muted">{b.description}</div>
-              {got && <div className="tiny" style={{ color: "var(--gold)" }}>{new Intl.DateTimeFormat("ar", { dateStyle: "medium" }).format(new Date(s.badges[b.id]))}</div>}
+              {got && <div className="tiny" style={{ color: "var(--gold)" }}>{dateMedium(new Date(s.badges[b.id]))}</div>}
             </motion.div>
           );
         })}

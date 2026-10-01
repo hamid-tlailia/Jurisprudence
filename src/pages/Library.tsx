@@ -2,87 +2,18 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Bookmark, BookmarkCheck, Check, ChevronDown, Lightbulb, Sparkles } from "lucide-react";
-import { books, getBook, trackMeta, type Book, type Masala } from "../data";
+import { getBook, trackMeta, type Book, type Masala } from "../data";
 import { useStore } from "../lib/store";
 import { useAiPanel, AI_ACTIONS } from "../lib/aiPanel";
 import { num, pct } from "../lib/format";
 import { Markdown } from "../components/Markdown";
+import { Verses } from "../components/Verses";
 import { Bar } from "../components/ProgressRing";
-import { stagger } from "../components/Reveal";
 import NotFound from "./NotFound";
 
 const countMasail = (b: Book) => b.chapters.reduce((n, c) => n + c.masail.length, 0);
 
-export function LibraryPage() {
-  const read = useStore((s) => s.readMasail);
-  const bookmarks = useStore((s) => s.bookmarks);
-  return (
-    <div className="page">
-      <header className="stack-sm" style={{ marginBottom: 28 }}>
-        <span className="eyebrow">المكتبة</span>
-        <h1 className="title-xl">متون مختارة مع شرح مسائلها</h1>
-        <p className="ink-2" style={{ maxWidth: 640 }}>
-          متون معتمدة عند أهل العلم، مقسّمة إلى مسائل: نص المتن، ثم شرحه، ثم فوائد وتنبيهات، مع إمكانية التوسع في كل مسألة بالمُعين.
-        </p>
-      </header>
-
-      <motion.div className="grid-3" variants={stagger.container} initial="hidden" animate="show">
-        {books.map((b) => {
-          const total = countMasail(b);
-          const done = Object.keys(read).filter((k) => k.startsWith(b.id + "/")).length;
-          const meta = trackMeta[b.field];
-          return (
-            <motion.div key={b.id} variants={stagger.item}>
-              <Link to={`/library/${b.id}`} className="card card-hover stack" style={{ padding: 0, overflow: "hidden", height: "100%", gap: 0, ["--hue" as string]: meta.hue }}>
-                <div
-                  style={{
-                    position: "relative",
-                    height: 120,
-                    background: `linear-gradient(135deg, color-mix(in oklab, ${meta.hue} 22%, var(--surface)), var(--surface-2))`,
-                    display: "grid",
-                    placeItems: "center",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div className="pattern" style={{ maskImage: "none", opacity: 0.08 }} />
-                  <span style={{ position: "relative", fontFamily: "var(--font-classic)", fontSize: "1.7rem", fontWeight: 700, color: meta.hue, textAlign: "center", padding: "0 16px", lineHeight: 1.4 }}>
-                    {b.title}
-                  </span>
-                </div>
-                <div className="stack-sm" style={{ padding: 20, flex: 1 }}>
-                  <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
-                    <span className="chip" style={{ color: meta.hue }}>
-                      {meta.short}
-                    </span>
-                    <span className="chip">{b.kind}</span>
-                    {b.madhhab && <span className="chip chip-gold">{b.madhhab}</span>}
-                  </div>
-                  <div className="small" style={{ fontWeight: 600 }}>
-                    {b.author} <span className="muted tiny">({b.authorDates})</span>
-                  </div>
-                  <p className="small muted" style={{ flex: 1 }}>
-                    {b.description.length > 140 ? b.description.slice(0, 140) + "…" : b.description}
-                  </p>
-                  <div className="row-between tiny muted" style={{ marginTop: 6 }}>
-                    <span>
-                      {num(done)} / {num(total)} مسألة
-                    </span>
-                    <span>{pct(done / total)}</span>
-                  </div>
-                  <Bar value={done / total} color={meta.hue} />
-                </div>
-              </Link>
-            </motion.div>
-          );
-        })}
-      </motion.div>
-
-      {bookmarks.length > 0 && <Bookmarks keys={bookmarks} />}
-    </div>
-  );
-}
-
-function Bookmarks({ keys }: { keys: string[] }) {
+export function Bookmarks({ keys }: { keys: string[] }) {
   return (
     <section>
       <div className="section-head">
@@ -140,8 +71,8 @@ export function BookPage() {
 
   return (
     <div className="page" style={{ ["--hue" as string]: meta.hue }}>
-      <Link to="/library" className="small muted row" style={{ gap: 4, marginBottom: 18 }}>
-        <ArrowRight size={14} /> المكتبة
+      <Link to="/wing/fiqh?tab=texts" className="small muted row" style={{ gap: 4, marginBottom: 18 }}>
+        <ArrowRight size={14} /> الفقه وأصوله · المتون
       </Link>
 
       <header className="card hero stack" style={{ marginBottom: 28 }}>
@@ -183,7 +114,7 @@ export function BookPage() {
                 </h2>
               </div>
               {ch.masail.map((m) => (
-                <MasalaCard key={m.id} book={book} masala={m} />
+                <MasalaCard key={m.id} book={book} masala={m} initialOpen={location.hash === `#${m.id}`} />
               ))}
             </section>
           ))}
@@ -213,14 +144,14 @@ export function BookPage() {
   );
 }
 
-function MasalaCard({ book, masala }: { book: Book; masala: Masala }) {
+function MasalaCard({ book, masala, initialOpen }: { book: Book; masala: Masala; initialOpen: boolean }) {
   const key = `${book.id}/${masala.id}`;
   const isRead = useStore((s) => !!s.readMasail[key]);
   const bookmarked = useStore((s) => s.bookmarks.includes(key));
   const readMasala = useStore((s) => s.readMasala);
   const toggleBookmark = useStore((s) => s.toggleBookmark);
   const openAi = useAiPanel((p) => p.openAi);
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(initialOpen);
   const isVerse = book.kind === "نظم";
   const context = `المتن: ${book.title} لـ${book.author}${book.madhhab ? ` (المذهب ${book.madhhab})` : ""}\nالمسألة: ${masala.title}\n\nنص المتن:\n${masala.matn}\n\nالشرح المختصر:\n${masala.sharh}`;
 
@@ -250,11 +181,11 @@ function MasalaCard({ book, masala }: { book: Book; masala: Masala }) {
 
       {isVerse ? <Verses text={masala.matn} /> : <div className="matn">{masala.matn}</div>}
 
-      <button className="row small" style={{ gap: 6, color: "var(--ink-2)", fontWeight: 600, alignSelf: "flex-start" }} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        <motion.span animate={{ rotate: open ? 0 : 90 }} style={{ display: "grid" }}>
-          <ChevronDown size={17} />
+      <button className="btn btn-ghost" style={{ justifyContent: "space-between" }} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span>{open ? "إخفاء الشرح" : "اقرأ الشرح والفوائد"}</span>
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.3 }} style={{ display: "grid" }}>
+          <ChevronDown size={18} />
         </motion.span>
-        الشرح
       </button>
 
       <AnimatePresence initial={false}>
@@ -311,22 +242,3 @@ function MasalaCard({ book, masala }: { book: Book; masala: Masala }) {
   );
 }
 
-/** عرض الأبيات: صدر وعجز متقابلان */
-function Verses({ text }: { text: string }) {
-  return (
-    <div className="matn verse">
-      {text.split("\n").map((line, i) => {
-        const [sadr, ajuz = ""] = line.split("...").map((x) => x.trim());
-        return (
-          <div key={i} className="bayt">
-            <span>{sadr || "…"}</span>
-            <span className="bayt-sep" aria-hidden>
-              ۞
-            </span>
-            <span>{ajuz || "…"}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}

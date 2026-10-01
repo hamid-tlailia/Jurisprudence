@@ -3,6 +3,7 @@
  * دوال خالصة قابلة للاختبار.
  */
 import { allLessons, tracks } from "../data";
+import type { PlanTask } from "../data/plans";
 import { plans } from "../data/plans";
 
 export const XP = {
@@ -145,9 +146,16 @@ export const BADGES: Badge[] = [
   {
     id: "bayquniyya",
     title: "ختم البيقونية",
-    description: "قرأت جميع مسائل المنظومة البيقونية",
+    description: "أتممت شرح أبيات المنظومة البيقونية كلها",
     icon: "scroll",
-    check: (s) => Object.keys(s.readMasail).filter((k) => k.startsWith("bayquniyya/")).length >= 23,
+    check: (s) => allLessons.filter((e) => e.lesson.id.startsWith("bq")).every((e) => s.completedLessons[e.lesson.id]),
+  },
+  {
+    id: "arbain",
+    title: "ختم الأربعين",
+    description: "أتممت شرح الأحاديث الاثنين والأربعين",
+    icon: "book-open",
+    check: (s) => allLessons.filter((e) => /^h\d+$/.test(e.lesson.id)).every((e) => s.completedLessons[e.lesson.id]),
   },
   { id: "curious", title: "سؤول عقول", description: "طرحت عشرة أسئلة على المُعين", icon: "sparkles", check: (s) => s.aiQuestions >= 10 },
   { id: "plan-done", title: "وفيّ بالعهد", description: "أتممت خطة دراسية كاملة", icon: "medal", check: (s) => s.completedPlans.length >= 1 },
@@ -168,7 +176,7 @@ export function evaluateBadges(s: ProgressState, now = new Date()): { badges: Re
 
 // ————— الخطط —————
 
-export function isTaskDone(s: Pick<ProgressState, "completedLessons" | "readMasail">, t: import("../data/plans").PlanTask) {
+export function isTaskDone(s: Pick<ProgressState, "completedLessons" | "readMasail">, t: PlanTask) {
   return t.type === "lesson" ? !!s.completedLessons[t.id] : !!s.readMasail[`${t.bookId}/${t.id}`];
 }
 

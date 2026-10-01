@@ -1,11 +1,12 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { ApiError, FinishReason, GoogleGenAI, type Content } from "@google/genai";
 
 /**
- * نواة المُعين: التعليمات، وبناء الرسائل، والبث المتدفق من Claude.
+ * نواة المُعين: التعليمات، وبناء الرسائل، والبث المتدفق من Gemini.
  * مشتركة بين الخادم (دالة Vercel / Vite) والمتصفح (عند استخدام مفتاح المستخدم).
  */
 
-export const MODEL = "claude-opus-5-5";
+/** نموذج مجاني مستقر على الطبقة المجانية لواجهة Gemini */
+export const DEFAULT_MODEL = "gemini-3.8-flash";
 
 export const SYSTEM_PROMPT = `أنت «المُعين»، مساعد تعليمي في منصة «الرواق» لتعليم الفقه الإسلامي وأصوله، والحديث النبوي وعلومه.
 
@@ -53,47 +54,44 @@ export function sanitize(body: unknown): AiRequestBody | null {
   };
 }
 
-/** يبني رسائل الطلب: السياق التعليمي (النص والشرح) يُدمج في أول رسالة للمستخدم. */
-export function buildMessages(req: AiRequestBody): Anthropic.MessageParam[] {
+/** يبني محتوى المحادثة: السياق التعليمي (النص والشرح) يُدمج في أول رسالة للمستخدم. */
+export function buildContents(req: AiRequestBody): Content[] {
   const hint = req.mode && req.mode !== "chat" ? MODE_HINTS[req.mode] : undefined;
   return req.messages.map((m, i) => {
-    if (i !== 0 || m.role !== "user" || (!req.context && !hint)) return m;
-    const parts: string[] = [];
-    if (req.context) parts.push(`<سياق_الدرس>\n${req.context}\n</سياق_الدرس>`);
-    if (hint) parts.push(`المطلوب: ${hint}`);
-    parts.push(m.content);
-    return { role: "user", content: parts.join("\n\n") };
+    let text = m.content;
+    if (i === 0 && m.role === "user" && (req.context || hint)) {
+      const parts: string[] = [];
+      if (req.context) parts.push(`<سياق_الدرس>\n${req.context}\n</سياق_الدرس>`);
+      if (hint) parts.push(`المطلوب: ${hint}`);
+      parts.push(m.content);
+      text = parts.join("\n\n");
+    }
+    return { role: m.role === "assistant" ? "model" : "user", parts: [{ text }] };
   });
 }
 
-/**
- * يرسل الطلب إلى Claude ويعيد تياراً نصياً.
- * مفعّل عليه الانتقال التلقائي إلى نموذج بديل عند رفض المصنِّفات (fallbacks: "default").
- */
-export function streamAnswer(client: Anthropic, req: AiRequestBody): ReadableStream<Uint8Array> {
+/** يرسل الطلب إلى Gemini ويعيد تياراً نصياً. */
+export function streamAnswer(apiKey: string, req: AiRequestBody, model = DEFAULT_MODEL): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
+  const ai = new GoogleGenAI({ apiKey });
   return new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        const stream = client.beta.messages.stream({
-          model: MODEL,
-          max_tokens: 16000,
-          betas: ["server-side-fallback-2026-07-01"],
-          fallbacks: "default",
-          output_config: { effort: "medium" },
-          system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-          messages: buildMessages(req),
+        const stream = await ai.models.generateContentStream({
+          model,
+          contents: buildContents(req),
+          config: { systemInstruction: SYSTEM_PROMPT, temperature: 0.4, maxOutputTokens: 8192 },
         });
-        for await (const event of stream) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            controller.enqueue(encoder.encode(event.delta.text));
-          }
+        let finish: FinishReason | undefined;
+        for await (const chunk of stream) {
+          const text = chunk.text;
+          if (text) controller.enqueue(encoder.encode(text));
+          finish = chunk.candidates?.[0]?.finishReason ?? finish;
         }
-        const final = await stream.finalMessage();
-        if (final.stop_reason === "refusal") {
-          controller.enqueue(encoder.encode("\n\n> تعذّر إكمال الإجابة عن هذا الطلب. جرّب صياغة السؤال بطريقة أخرى."));
-        } else if (final.stop_reason === "max_tokens") {
+        if (finish === FinishReason.MAX_TOKENS) {
           controller.enqueue(encoder.encode("\n\n> (انتهى الحد الأقصى لطول الإجابة — اطلب المتابعة لإكمالها.)"));
+        } else if (finish === FinishReason.SAFETY) {
+          controller.enqueue(encoder.encode("\n\n> تعذّر إكمال الإجابة عن هذا الطلب. جرّب صياغة السؤال بطريقة أخرى."));
         }
       } catch (err) {
         controller.enqueue(encoder.encode(`\n\n> ${describeError(err)}`));
@@ -104,10 +102,13 @@ export function streamAnswer(client: Anthropic, req: AiRequestBody): ReadableStr
   });
 }
 
-function describeError(err: unknown): string {
-  if (err instanceof Anthropic.AuthenticationError) return "مفتاح الواجهة البرمجية غير صالح.";
-  if (err instanceof Anthropic.RateLimitError) return "تجاوزت حدّ الطلبات مؤقتاً، حاول بعد قليل.";
-  if (err instanceof Anthropic.APIConnectionError) return "تعذّر الاتصال بخدمة الذكاء الاصطناعي.";
-  if (err instanceof Anthropic.APIError) return `حدث خطأ في خدمة الذكاء الاصطناعي (${err.status ?? "?"}).`;
+export function describeError(err: unknown): string {
+  if (err instanceof ApiError) {
+    if (err.status === 400 || err.status === 401 || err.status === 403) return "مفتاح Gemini غير صالح أو لا يملك صلاحية لهذا النموذج.";
+    if (err.status === 429) return "تجاوزت حدّ الطلبات المجانية مؤقتاً، حاول بعد قليل.";
+    if (err.status >= 500) return "خدمة Gemini مشغولة حالياً، حاول بعد قليل.";
+    return `حدث خطأ في خدمة الذكاء الاصطناعي (${err.status}).`;
+  }
+  if (err instanceof TypeError) return "تعذّر الاتصال بخدمة الذكاء الاصطناعي.";
   return "حدث خطأ غير متوقع أثناء توليد الإجابة.";
 }

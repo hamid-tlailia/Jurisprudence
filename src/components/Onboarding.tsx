@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, Check } from "lucide-react";
-import { plans } from "../data/plans";
+import { wingList, wingLessons, type WingId } from "../data";
+import { useNavigate } from "react-router-dom";
 import { useStore } from "../lib/store";
 import { num } from "../lib/format";
 import { Brand } from "./Shell";
 import { ThemeSegmented } from "./ThemeSwitch";
 
 const GOALS = [
-  { v: 20, label: "خفيف", hint: "نحو ١٠ دقائق" },
-  { v: 30, label: "معتدل", hint: "نحو ١٥ دقيقة" },
-  { v: 50, label: "جادّ", hint: "نحو ٢٥ دقيقة" },
+  { v: 20, label: "خفيف", hint: "نحو 10 دقائق" },
+  { v: 30, label: "معتدل", hint: "نحو 15 دقيقة" },
+  { v: 50, label: "جادّ", hint: "نحو 25 دقيقة" },
 ];
 
 export function Onboarding() {
@@ -19,7 +20,8 @@ export function Onboarding() {
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [goal, setGoal] = useState(30);
-  const [plan, setPlan] = useState<string | null>("foundations");
+  const [wing, setWing] = useState<WingId>("fiqh");
+  const navigate = useNavigate();
 
   if (onboarded) return null;
 
@@ -58,27 +60,20 @@ export function Onboarding() {
       </div>
     </div>,
     <div key="2" className="stack">
-      <h2 className="title-lg">اختر خطتك الأولى</h2>
+      <h2 className="title-lg">بأي جناح تبدأ؟</h2>
+      <p className="small muted">يمكنك التنقل بين الجناحين في أي وقت، ولكلٍّ منهما تقدّمه الخاص.</p>
       <div className="stack-sm">
-        {plans.map((p) => (
-          <button key={p.id} className={`choice ${plan === p.id ? "on" : ""}`} onClick={() => setPlan(p.id)} style={{ alignItems: "flex-start" }}>
-            <span className="check" style={plan === p.id ? { background: "var(--accent)", borderColor: "transparent", color: "var(--accent-ink)" } : undefined}>
-              <Check size={14} />
+        {wingList.map((w) => (
+          <button key={w.id} className={`choice ${wing === w.id ? "on" : ""}`} onClick={() => setWing(w.id)} style={{ alignItems: "flex-start", ["--hue" as string]: w.hue }}>
+            <span className="wing-glyph" style={{ width: 48, height: 48, fontSize: "1.6rem", borderRadius: 14 }}>
+              {w.glyph}
             </span>
             <span style={{ flex: 1 }}>
-              <span style={{ fontWeight: 700, display: "block" }}>{p.title}</span>
-              <span className="tiny muted">
-                {num(p.days.length)} يوماً · {num(p.minutesPerDay)} دقيقة يومياً
-              </span>
+              <span style={{ fontWeight: 700, display: "block" }}>{w.title}</span>
+              <span className="tiny muted">{w.tagline}</span>
             </span>
           </button>
         ))}
-        <button className={`choice ${plan === null ? "on" : ""}`} onClick={() => setPlan(null)}>
-          <span className="check" style={plan === null ? { background: "var(--accent)", borderColor: "transparent", color: "var(--accent-ink)" } : undefined}>
-            <Check size={14} />
-          </span>
-          <span style={{ flex: 1, fontWeight: 600 }}>سأتصفح بحرية</span>
-        </button>
       </div>
     </div>,
   ];
@@ -106,8 +101,12 @@ export function Onboarding() {
                 رجوع
               </button>
             )}
-            <button className="btn btn-primary" onClick={() => (last ? finish(name.trim(), goal, plan) : setStep(step + 1))}>
-              {last ? "لنبدأ على بركة الله" : "التالي"} <ArrowLeft size={17} />
+            <button className="btn btn-primary" onClick={() => {
+                if (!last) return setStep(step + 1);
+                finish(name.trim(), goal, null);
+                navigate(`/lesson/${wingLessons(wing)[0].lesson.id}`);
+              }}>
+              {last ? "ابدأ الدرس الأول" : "التالي"} <ArrowLeft size={17} />
             </button>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, CalendarRange, Check, Clock, LogOut, Target } from "lucide-react";
@@ -16,8 +17,16 @@ const GOALS = [
   { v: 80, label: "مكثّف", hint: "ثلاثة دروس فأكثر" },
 ];
 
+const FILTERS = [
+  { id: "all", label: "الكل" },
+  { id: "fiqh", label: "الفقه" },
+  { id: "hadith", label: "الحديث" },
+] as const;
+
 export default function PlansPage() {
   const s = useStore();
+  const [filter, setFilter] = useState<(typeof FILTERS)[number]["id"]>("all");
+  const shown = plans.filter((p) => filter === "all" || p.wing === filter || p.wing === "both");
   const pp = s.activePlan ? planProgress(s, s.activePlan.id) : null;
 
   return (
@@ -94,11 +103,19 @@ export default function PlansPage() {
         </div>
       </section>
 
-      <h2 className="title-lg" style={{ marginBottom: 16 }}>
-        الخطط المتاحة
-      </h2>
-      <motion.div className="grid-2" variants={stagger.container} initial="hidden" animate="show">
-        {plans.map((p) => {
+      <div className="row-between" style={{ marginBottom: 16, flexWrap: "wrap" }}>
+        <h2 className="title-lg">الخطط المتاحة</h2>
+        <div className="segmented">
+          {FILTERS.map((f) => (
+            <button key={f.id} className={filter === f.id ? "on" : ""} onClick={() => setFilter(f.id)}>
+              {filter === f.id && <motion.span layoutId="plan-filter" className="seg-pill" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <motion.div key={filter} className="grid-2" variants={stagger.container} initial="hidden" animate="show">
+        {shown.map((p) => {
           const prog = planProgress(s, p.id)!;
           const active = s.activePlan?.id === p.id;
           const completed = s.completedPlans.includes(p.id);

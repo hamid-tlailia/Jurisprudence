@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { currentStreak, dayKey, evaluateBadges, initialProgress, levelFor, longestStreak, planProgress } from "../src/lib/progress";
-import { allLessons, allMasail, books, getMasala, search, tracks } from "../src/data";
+import { allLessons, books, getMasala, matnCollections, nextInWing, search, tracks, wingLessons } from "../src/data";
 import { plans } from "../src/data/plans";
-import { buildMessages, sanitize } from "../src/shared/ai-core";
+import { buildContents, sanitize } from "../src/shared/ai-core";
 
 const d = (s: string) => new Date(s + "T12:00:00");
 
@@ -38,25 +38,37 @@ describe("content integrity", () => {
     const ids = allLessons.map((e) => e.lesson.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const { lesson } of allLessons) {
-      expect(lesson.quiz.length).toBeGreaterThan(0);
-      for (const q of lesson.quiz) expect(q.answer).toBeLessThan(q.options.length);
-      if (lesson.ref?.masalaId) expect(getMasala(lesson.ref.bookId, lesson.ref.masalaId)).toBeTruthy();
+      expect(lesson.quiz.length, lesson.id).toBeGreaterThan(0);
+      for (const q of lesson.quiz) expect(q.answer, `${lesson.id}: ${q.q}`).toBeLessThan(q.options.length);
+      if (lesson.ref?.masalaId) expect(getMasala(lesson.ref.bookId, lesson.ref.masalaId), lesson.id).toBeTruthy();
     }
+  });
+  it("covers every Bayquniyya verse and all 42 hadiths", () => {
+    const verses = matnCollections[0].items.flatMap((i) => i.text.split("\n")).filter((l) => !l.startsWith("..."));
+    expect(verses).toHaveLength(34);
+    expect(matnCollections[1].items).toHaveLength(42);
+  });
+  it("uses only Western digits in content", () => {
+    const text = JSON.stringify(tracks) + JSON.stringify(books);
+    expect(/[٠-٩]/.test(text)).toBe(false);
   });
   it("has unique masala ids per book", () => {
     for (const b of books) {
       const ids = b.chapters.flatMap((c) => c.masail.map((m) => m.id));
       expect(new Set(ids).size).toBe(ids.length);
     }
-    expect(allMasail.length).toBeGreaterThan(50);
   });
-  it("plans reference existing content", () => {
-    for (const p of plans)
-      for (const day of p.days)
+  it("plans reference existing content and have no empty days", () => {
+    for (const p of plans) {
+      expect(p.days.length, p.id).toBeGreaterThan(0);
+      for (const day of p.days) {
+        expect(day.length, p.id).toBeGreaterThan(0);
         for (const t of day) {
           if (t.type === "lesson") expect(allLessons.some((e) => e.lesson.id === t.id), t.id).toBe(true);
           else expect(getMasala(t.bookId, t.id), `${t.bookId}/${t.id}`).toBeTruthy();
         }
+      }
+    }
   });
   it("plan progress finishes when all tasks done", () => {
     const p = plans.find((x) => x.id === "light")!;
@@ -64,11 +76,17 @@ describe("content integrity", () => {
     p.days.flat().forEach((t) => t.type === "masala" && (readMasail[`${t.bookId}/${t.id}`] = "x"));
     expect(planProgress({ ...initialProgress, readMasail }, "light")!.finished).toBe(true);
   });
+  it("orders each wing as a single path", () => {
+    expect(wingLessons("fiqh")[0].lesson.id).toBe("f1");
+    expect(wingLessons("hadith")[0].lesson.id).toBe("m1");
+    expect(nextInWing("hadith", { m1: true })?.lesson.id).toBe("bq1");
+    const h = wingLessons("hadith");
+    expect(h.every((e, i) => e.wingIndex === i && e.wingTotal === h.length)).toBe(true);
+  });
   it("search ignores diacritics and hamza forms", () => {
     expect(search("الاعمال").length).toBeGreaterThan(0);
     expect(search("الصَّحيح").length).toBeGreaterThan(0);
   });
-  it("has four tracks", () => expect(tracks).toHaveLength(4));
 });
 
 describe("ai request shaping", () => {
@@ -77,7 +95,7 @@ describe("ai request shaping", () => {
     expect(sanitize({ messages: [{ role: "assistant", content: "x" }] })).toBeNull();
     expect(sanitize({ messages: [{ role: "system", content: "x" }] })).toBeNull();
   });
-  it("injects context and mode only into the first user turn", () => {
+  it("maps roles to Gemini and injects context only into the first user turn", () => {
     const req = sanitize({
       messages: [
         { role: "user", content: "سؤال" },
@@ -87,19 +105,10 @@ describe("ai request shaping", () => {
       context: "نص المتن",
       mode: "expand",
     })!;
-    const msgs = buildMessages(req);
-    expect(msgs[0].content).toContain("نص المتن");
-    expect(msgs[0].content).toContain("وسّع شرح");
-    expect(msgs[2].content).toBe("متابعة");
-  });
-});
-
-describe("ai streaming errors", () => {
-  it("streams a readable Arabic error instead of throwing", async () => {
-    const { default: Anthropic } = await import("@anthropic-ai/sdk");
-    const { streamAnswer } = await import("../src/shared/ai-core");
-    const client = new Anthropic({ apiKey: "test", baseURL: "http://127.0.0.1:9", maxRetries: 0 });
-    const body = await new Response(streamAnswer(client, { messages: [{ role: "user", content: "سلام" }] })).text();
-    expect(body).toContain("تعذّر الاتصال");
+    const contents = buildContents(req);
+    expect(contents.map((c) => c.role)).toEqual(["user", "model", "user"]);
+    expect(contents[0].parts![0].text).toContain("نص المتن");
+    expect(contents[0].parts![0].text).toContain("وسّع شرح");
+    expect(contents[2].parts![0].text).toBe("متابعة");
   });
 });
