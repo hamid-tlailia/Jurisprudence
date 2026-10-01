@@ -23,7 +23,7 @@ export default function SettingsPage() {
     <div className="page page-narrow">
       <header className="stack-sm" style={{ marginBottom: 28 }}>
         <span className="eyebrow">الإعدادات</span>
-        <h1 className="title-xl">هيّئ الرواق كما تحب</h1>
+        <h1 className="title-xl">هيّئ رواق كما تحب</h1>
       </header>
 
       <div className="stack" style={{ gap: 18 }}>
@@ -74,7 +74,7 @@ export default function SettingsPage() {
         </Section>
 
         <p className="tiny muted" style={{ textAlign: "center", marginTop: 12 }}>
-          الرواق — منصة تعليمية. المحتوى العلمي مختصر من كتب أهل العلم للتعليم والتقريب، ولا يغني عن التلقي من العلماء.
+          رواق — منصة تعليمية. المحتوى العلمي مختصر من كتب أهل العلم للتعليم والتقريب، ولا يغني عن التلقي من العلماء.
         </p>
       </div>
     </div>

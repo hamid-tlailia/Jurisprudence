@@ -334,51 +334,118 @@ function DailyBenefit() {
   );
 }
 
+/** يرتب الأسئلة ترتيباً ثابتاً خلال اليوم ويتغير من يوم لآخر */
+function shuffleForDay<T>(items: T[], day: string): T[] {
+  let h = 0;
+  for (const ch of day) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    h = (h * 1103515245 + 12345) >>> 0;
+    const j = h % (i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/**
+ * سؤال المراجعة: من الدروس المكتملة فقط، بلا تكرار في اليوم نفسه.
+ * إذا انتهت الأسئلة المتاحة تُغلق المراجعة حتى الغد أو حتى إتمام درس جديد.
+ */
 function ReviewQuestion() {
   const completed = useStore((s) => s.completedLessons);
+  const review = useStore((s) => s.review);
+  const markReviewed = useStore((s) => s.markReviewed);
+  const today = dayKey();
+  const done = review.day === today ? review.done : [];
+
   const pool = useMemo(() => {
-    const done = allLessons.filter((e) => completed[e.lesson.id]);
-    const src = done.length ? done : allLessons.slice(0, 4);
-    return src.flatMap((e) => e.lesson.quiz.map((q) => ({ q, lesson: e.lesson })));
-  }, [completed]);
-  const [offset, setOffset] = useState(0);
-  const item = dailyPick(pool, 11 + offset);
+    const items = allLessons
+      .filter((e) => completed[e.lesson.id])
+      .flatMap((e) => e.lesson.quiz.map((q, i) => ({ id: `${e.lesson.id}:${i}`, q, lesson: e.lesson })));
+    return shuffleForDay(items, today);
+  }, [completed, today]);
+
+  const [currentId, setCurrentId] = useState<string | null>(null);
   const [picked, setPicked] = useState<number | null>(null);
+  const remaining = pool.filter((p) => !done.includes(p.id));
+  // السؤال المعروض: الذي أُجيب عنه للتو (ليرى المستخدم الشرح)، وإلا أول سؤال لم يُجب عنه
+  const item = (currentId && pool.find((p) => p.id === currentId)) || remaining[0];
+
+  const header = (
+    <div className="row-between" style={{ flexWrap: "wrap" }}>
+      <div className="row" style={{ gap: 10 }}>
+        <RotateCcw size={19} color="var(--accent)" />
+        <h2 className="title-md">سؤال المراجعة</h2>
+      </div>
+      {pool.length > 0 && (
+        <span className="chip">
+          {num(Math.min(done.length, pool.length))} / {num(pool.length)} اليوم
+        </span>
+      )}
+    </div>
+  );
+
+  if (pool.length === 0) {
+    return (
+      <section className="card card-pad stack">
+        {header}
+        <p className="small muted">أتمم درساً واحداً على الأقل لتظهر لك هنا أسئلة تراجع بها ما تعلمته.</p>
+      </section>
+    );
+  }
+
+  if (!item) {
+    return (
+      <section className="card card-pad stack">
+        {header}
+        <div className="row" style={{ gap: 12 }}>
+          <span className="check" style={{ background: "var(--accent)", borderColor: "transparent", color: "var(--accent-ink)" }}>
+            <Check size={15} />
+          </span>
+          <div>
+            <div style={{ fontWeight: 700 }}>أتممت مراجعة اليوم، بارك الله فيك</div>
+            <div className="small muted">تعود الأسئلة غداً، أو تظهر أسئلة جديدة حين تُتمّ درساً جديداً.</div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  const answered = picked !== null && currentId === item.id;
+  const choose = (i: number) => {
+    if (answered) return;
+    setCurrentId(item.id);
+    setPicked(i);
+    markReviewed(item.id);
+  };
+  const next = () => {
+    setCurrentId(null);
+    setPicked(null);
+  };
 
   return (
     <section className="card card-pad stack">
-      <div className="row-between" style={{ flexWrap: "wrap" }}>
-        <div className="row" style={{ gap: 10 }}>
-          <RotateCcw size={19} color="var(--accent)" />
-          <h2 className="title-md">سؤال المراجعة</h2>
-        </div>
-        <span className="tiny muted">من درس: {item.lesson.title}</span>
-      </div>
+      {header}
+      <span className="tiny muted">من درس: {item.lesson.title}</span>
       <p style={{ fontWeight: 600, fontSize: "1.05rem" }}>{item.q.q}</p>
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
         {item.q.options.map((o, i) => {
-          const state = picked === null ? "" : i === item.q.answer ? "correct" : i === picked ? "wrong" : "";
+          const state = !answered ? "" : i === item.q.answer ? "correct" : i === picked ? "wrong" : "";
           return (
-            <motion.button key={i} whileTap={{ scale: 0.98 }} className={`option ${state}`} disabled={picked !== null} onClick={() => setPicked(i)}>
-              <span className="letter">{"أبجد"[i]}</span>
+            <motion.button key={item.id + i} whileTap={{ scale: 0.98 }} className={`option ${state}`} disabled={answered} onClick={() => choose(i)}>
+              <span className="letter">{"أبجدهو"[i]}</span>
               {o}
             </motion.button>
           );
         })}
       </div>
-      {picked !== null && (
+      {answered && (
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="row-between" style={{ flexWrap: "wrap" }}>
           <p className="small ink-2" style={{ flex: 1 }}>
             {item.q.explain}
           </p>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() => {
-              setPicked(null);
-              setOffset((o) => o + 1);
-            }}
-          >
-            سؤال آخر
+          <button className="btn btn-ghost btn-sm" onClick={next}>
+            {remaining.length > 0 ? "السؤال التالي" : "إنهاء المراجعة"}
           </button>
         </motion.div>
       )}

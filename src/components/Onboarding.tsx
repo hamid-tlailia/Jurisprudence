@@ -29,7 +29,7 @@ export function Onboarding() {
     <div key="0" className="stack" style={{ alignItems: "center", textAlign: "center" }}>
       <Brand />
       <h2 className="title-xl" style={{ fontSize: "2rem" }}>
-        أهلاً بك في الرواق
+        أهلاً بك في رواق
       </h2>
       <p className="ink-2">
         مدرسة هادئة لتعلّم الفقه الإسلامي وأصوله، والحديث النبوي وعلومه: دروس قصيرة، ومتون مشروحة، وخطط يومية، ومُعين ذكي يوسّع لك الشرح.

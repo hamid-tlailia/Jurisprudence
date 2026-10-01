@@ -28,7 +28,7 @@ export function Brand({ compact = false }: { compact?: boolean }) {
       <Logo size={compact ? 36 : 44} />
       <div>
         <div className="brand-name" style={compact ? { fontSize: "1.3rem" } : undefined}>
-          الرِّواق
+          رِواق
         </div>
         {!compact && <div className="brand-sub">مدرسة الفقه والحديث</div>}
       </div>
@@ -116,7 +116,11 @@ export function Shell({ children }: { children: ReactNode }) {
             {({ isActive }) => (
               <>
                 {isActive && <motion.span layoutId="bottom-dot" className="dot" transition={{ type: "spring", stiffness: 420, damping: 36 }} />}
-                <Icon size={21} strokeWidth={isActive ? 2.1 : 1.7} />
+                {isActive ? (
+                  <Icon size={22} strokeWidth={1.9} fill="currentColor" />
+                ) : (
+                  <Icon size={22} strokeWidth={1.7} />
+                )}
                 {label}
               </>
             )}
