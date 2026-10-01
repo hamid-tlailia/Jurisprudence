@@ -5,7 +5,7 @@ export type AiMode = NonNullable<AiRequestBody["mode"]>;
 
 /**
  * يطلب إجابة متدفقة من المُعين.
- * - إن أدخل المستخدم مفتاحه الخاص في الإعدادات: يُستدعى Claude من المتصفح مباشرة.
+ * - إن أدخل المستخدم مفتاح Gemini الخاص به في الإعدادات: يُستدعى Gemini من المتصفح مباشرة.
  * - وإلا: عبر نقطة الخادم ‎/api/ai‎ التي تحفظ المفتاح في بيئة الخادم.
  */
 export async function streamAi(
@@ -36,7 +36,7 @@ export async function streamAi(
     } catch {
       /* الرد ليس JSON */
     }
-    if (res.status === 404) msg = "نقطة ‎/api/ai‎ غير موجودة على هذا الخادم. أدخل مفتاح Claude الخاص بك من الإعدادات لتفعيل المُعين.";
+    if (res.status === 404) msg = "نقطة ‎/api/ai‎ غير موجودة على هذا الخادم. أدخل مفتاح Gemini الخاص بك من الإعدادات لتفعيل المُعين.";
     throw new Error(msg);
   }
   const reader = res.body.getReader();
@@ -53,12 +53,8 @@ export async function streamAi(
 }
 
 async function streamDirect(apiKey: string, body: AiRequestBody, onText: (s: string) => void, signal?: AbortSignal) {
-  const [{ default: Anthropic }, { streamAnswer }] = await Promise.all([
-    import("@anthropic-ai/sdk"),
-    import("../shared/ai-core"),
-  ]);
-  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
-  const reader = streamAnswer(client, body).getReader();
+  const { streamAnswer } = await import("../shared/ai-core");
+  const reader = streamAnswer(apiKey, body).getReader();
   const decoder = new TextDecoder();
   const onAbort = () => reader.cancel();
   signal?.addEventListener("abort", onAbort);

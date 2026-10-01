@@ -6,19 +6,18 @@ type Props = {
   size?: number;
   stroke?: number;
   color?: string;
-  track?: string;
   children?: ReactNode;
 };
 
-/** حلقة تقدم متحركة (0..1) */
-export function ProgressRing({ value, size = 120, stroke = 10, color = "var(--accent)", track = "var(--surface-3)", children }: Props) {
+/** حلقة تقدم متحركة (0..1) بخط واضح وأرضية ظاهرة، تتوسط حاويتها */
+export function ProgressRing({ value, size = 140, stroke = 12, color = "var(--accent)", children }: Props) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const v = Math.max(0, Math.min(1, value));
   return (
-    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size} style={{ transform: "rotate(-90deg) scaleY(-1)" }} aria-hidden>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={track} strokeWidth={stroke} />
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0, marginInline: "auto" }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)", overflow: "visible" }} aria-hidden>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="color-mix(in oklab, var(--ink) 10%, transparent)" strokeWidth={stroke} />
         <motion.circle
           cx={size / 2}
           cy={size / 2}
@@ -30,10 +29,11 @@ export function ProgressRing({ value, size = 120, stroke = 10, color = "var(--ac
           strokeDasharray={c}
           initial={{ strokeDashoffset: c }}
           animate={{ strokeDashoffset: c * (1 - v) }}
-          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+          style={{ filter: `drop-shadow(0 0 6px color-mix(in oklab, ${color} 45%, transparent))` }}
         />
       </svg>
-      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center" }}>{children}</div>
+      <div style={{ position: "absolute", inset: stroke, display: "grid", placeItems: "center", textAlign: "center" }}>{children}</div>
     </div>
   );
 }

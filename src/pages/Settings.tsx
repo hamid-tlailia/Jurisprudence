@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { Eye, EyeOff, KeyRound, Palette, RotateCcw, Type, User } from "lucide-react";
+import { Eye, EyeOff, ExternalLink, KeyRound, Palette, RotateCcw, Type, User } from "lucide-react";
 import { useStore } from "../lib/store";
 import { ThemeSegmented } from "../components/ThemeSwitch";
 import { num } from "../lib/format";
@@ -52,8 +52,8 @@ export default function SettingsPage() {
 
         <Section
           icon={<KeyRound size={19} />}
-          title="مفتاح Claude الخاص (اختياري)"
-          hint="يعمل المُعين عبر خادم التطبيق. إن لم يكن الخادم مهيّأً، أو أردت استعمال حسابك، أدخل مفتاح Claude API هنا؛ يُحفظ في متصفحك فقط ويُرسل مباشرة إلى Anthropic."
+          title="مفتاح Gemini (مجاني — اختياري)"
+          hint="يعمل المُعين بنموذج Gemini من Google. إن لم يكن الخادم مهيّأً بمفتاح، فأنشئ مفتاحاً مجانياً من Google AI Studio وألصقه هنا؛ يُحفظ في متصفحك فقط ويُرسل مباشرة إلى Google."
         >
           <div className="row">
             <input
@@ -61,14 +61,17 @@ export default function SettingsPage() {
               dir="ltr"
               type={showKey ? "text" : "password"}
               value={settings.userApiKey}
-              placeholder="sk-ant-…"
+              placeholder="AIza…"
               autoComplete="off"
-              onChange={(e) => setSettings({ userApiKey: e.target.value })}
+              onChange={(e) => setSettings({ userApiKey: e.target.value.trim() })}
             />
             <button className="icon-btn" onClick={() => setShowKey((v) => !v)} aria-label={showKey ? "إخفاء المفتاح" : "إظهار المفتاح"}>
               {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+          <a className="small row" style={{ gap: 6, color: "var(--accent)", fontWeight: 600 }} href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">
+            <ExternalLink size={14} /> احصل على مفتاح مجاني من Google AI Studio
+          </a>
         </Section>
 
         <Section icon={<RotateCcw size={19} />} title="إعادة ضبط التقدم" hint={`سيُحذف تقدمك كله (${num(xp)} نقطة، والدروس، والأوسمة). لا يمكن التراجع.`}>
