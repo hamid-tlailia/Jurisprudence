@@ -37,6 +37,9 @@ type Store = ProgressState & {
   leavePlan: () => void;
   setDailyGoal: (n: number) => void;
   toggleBookmark: (key: string) => void;
+  /** أسئلة المراجعة التي أُجيب عنها اليوم */
+  review: { day: string; done: string[] };
+  markReviewed: (id: string) => void;
   setSettings: (p: Partial<Settings>) => void;
   finishOnboarding: (name: string, goal: number, planId: string | null) => void;
   saveChat: (chat: Chat) => void;
@@ -108,6 +111,7 @@ export const useStore = create<Store>()(
       ...initialProgress,
       settings: { theme: "auto", fontScale: 1, name: "", showTashkeelHints: true },
       chats: [],
+      review: { day: "", done: [] },
       toasts: [],
       onboarded: false,
 
@@ -138,6 +142,13 @@ export const useStore = create<Store>()(
       leavePlan: () => set({ activePlan: null }),
       setDailyGoal: (n) => set({ dailyGoal: n }),
 
+      markReviewed: (id) =>
+        set((s) => {
+          const today = dayKey();
+          const done = s.review.day === today ? s.review.done : [];
+          return done.includes(id) ? {} : { review: { day: today, done: [...done, id] } };
+        }),
+
       toggleBookmark: (key) =>
         set((s) => ({
           bookmarks: s.bookmarks.includes(key) ? s.bookmarks.filter((k) => k !== key) : [...s.bookmarks, key],
@@ -160,7 +171,7 @@ export const useStore = create<Store>()(
       pushToast: (t) => set((s) => ({ toasts: [...s.toasts, { ...t, id: toastSeq++ }] })),
       dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
-      resetProgress: () => set({ ...initialProgress, toasts: [] }),
+      resetProgress: () => set({ ...initialProgress, review: { day: "", done: [] }, toasts: [] }),
     }),
     {
       name: "riwaq-v1",

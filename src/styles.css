@@ -2241,3 +2241,28 @@ p {
   color: var(--accent-ink);
   flex-shrink: 0;
 }
+
+
+.icon-btn {
+  position: relative;
+}
+
+.badge-dot {
+  position: absolute;
+  top: 2px;
+  inset-inline-end: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 99px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.history-title {
+  white-space: normal;
+}

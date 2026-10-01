@@ -19,7 +19,7 @@ export function ShareSheet({ entry, open, onClose }: { entry: LessonEntry; open:
   const name = `riwaq-${lesson.id}`;
   const text = [
     `📖 ${lesson.title}`,
-    `${track.title} — الرواق`,
+    `${track.title} — رواق`,
     "",
     lesson.matn ? lesson.matn.text : lesson.summary,
     "",
@@ -39,7 +39,7 @@ export function ShareSheet({ entry, open, onClose }: { entry: LessonEntry; open:
         if (action === "share") {
           const file = await dataUrlToFile(png, `${name}.png`);
           if (navigator.canShare?.({ files: [file] })) {
-            await navigator.share({ files: [file], title: lesson.title, text: `${lesson.title} — الرواق` });
+            await navigator.share({ files: [file], title: lesson.title, text: `${lesson.title} — رواق` });
           } else if (navigator.share) {
             await navigator.share({ title: lesson.title, text, url: location.href });
           } else {
@@ -91,7 +91,7 @@ export function ShareSheet({ entry, open, onClose }: { entry: LessonEntry; open:
               <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
                 <Logo size={84} />
                 <div>
-                  <div style={{ fontFamily: "var(--font-classic)", fontSize: 48, fontWeight: 700, lineHeight: 1.1 }}>الرِّواق</div>
+                  <div style={{ fontFamily: "var(--font-classic)", fontSize: 48, fontWeight: 700, lineHeight: 1.1 }}>رِواق</div>
                   <div style={{ fontSize: 24, color: "#7b847d" }}>{track.title}</div>
                 </div>
                 <div style={{ marginInlineStart: "auto", fontSize: 24, color: "#a07c3a", fontWeight: 600 }}>{dateMedium(new Date())}</div>
@@ -114,7 +114,7 @@ export function ShareSheet({ entry, open, onClose }: { entry: LessonEntry; open:
                 ))}
               </div>
               <div style={{ borderTop: "2px solid rgba(29,41,37,.1)", paddingTop: 24, fontSize: 22, color: "#7b847d", textAlign: "center" }}>
-                الرواق — مدرسة الفقه والحديث
+                رواق — مدرسة الفقه والحديث
               </div>
             </div>
           </div>,
