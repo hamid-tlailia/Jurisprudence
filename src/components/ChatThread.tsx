@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowUp, Square, TriangleAlert } from "lucide-react";
+import { ArrowUp, CloudOff, Square, TriangleAlert } from "lucide-react";
 import type { ChatMessage } from "../lib/store";
 import { Markdown } from "./Markdown";
+import { useOnline } from "../lib/online";
 
 type Props = {
   messages: ChatMessage[];
@@ -16,6 +17,7 @@ type Props = {
 
 export function ChatThread({ messages, streaming, error, onSend, onStop, empty, placeholder }: Props) {
   const [draft, setDraft] = useState("");
+  const online = useOnline();
   const scrollRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
 
@@ -32,7 +34,7 @@ export function ChatThread({ messages, streaming, error, onSend, onStop, empty, 
   }, [draft]);
 
   const submit = () => {
-    if (!draft.trim() || streaming) return;
+    if (!draft.trim() || streaming || !online) return;
     onSend(draft);
     setDraft("");
   };
@@ -78,6 +80,11 @@ export function ChatThread({ messages, streaming, error, onSend, onStop, empty, 
           </motion.div>
         )}
       </div>
+      {!online && (
+        <div className="row small muted" style={{ justifyContent: "center", gap: 6, padding: "8px 16px 0" }}>
+          <CloudOff size={16} /> أنت غير متصل — المُعين يحتاج إلى الإنترنت، وبقية التطبيق تعمل كالمعتاد.
+        </div>
+      )}
       <form
         className="composer"
         onSubmit={(e) => {
@@ -104,7 +111,7 @@ export function ChatThread({ messages, streaming, error, onSend, onStop, empty, 
             <Square size={16} fill="currentColor" />
           </button>
         ) : (
-          <button type="submit" className="btn btn-primary" disabled={!draft.trim()} aria-label="إرسال" style={{ height: 46, width: 46, padding: 0 }}>
+          <button type="submit" className="btn btn-primary" disabled={!draft.trim() || !online} aria-label="إرسال" style={{ height: 46, width: 46, padding: 0 }}>
             <ArrowUp size={20} />
           </button>
         )}

@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { Readable } from "node:stream";
+import { serviceWorker } from "./build/service-worker";
 
 /** يخدم ‎/api/ai‎ أثناء التطوير بنفس معالج دالة Vercel. */
 function devAiApi(apiKey: string | undefined, model: string | undefined): Plugin {
@@ -29,6 +30,6 @@ function devAiApi(apiKey: string | undefined, model: string | undefined): Plugin
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   return {
-    plugins: [react(), devAiApi(env.GEMINI_API_KEY, env.GEMINI_MODEL)],
+    plugins: [react(), devAiApi(env.GEMINI_API_KEY, env.GEMINI_MODEL), serviceWorker()],
   };
 });
