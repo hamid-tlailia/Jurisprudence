@@ -3,13 +3,14 @@ import { fiqhTrack } from "./tracks/fiqh";
 import { usulTrack } from "./tracks/usul";
 import { hadithTrack } from "./tracks/hadith";
 import { mustalahTrack } from "./tracks/mustalah";
+import { tajwidTrack } from "./tracks/tajwid";
 import { waraqat } from "./books/waraqat";
 import { abuShuja } from "./books/abushuja";
 import { akhdari } from "./books/akhdari";
 
 export * from "./types";
 
-export const tracks: Track[] = [fiqhTrack, usulTrack, mustalahTrack, hadithTrack];
+export const tracks: Track[] = [fiqhTrack, usulTrack, mustalahTrack, hadithTrack, tajwidTrack];
 export const books: Book[] = [akhdari, abuShuja, waraqat];
 
 export type Wing = {
@@ -24,7 +25,7 @@ export type Wing = {
   books: Book[];
 };
 
-/** جناحا الرواق: الفقه وأصوله، والحديث وعلومه — كلٌّ مستقل بمنهجه ومتونه */
+/** أجنحة الرواق: الفقه وأصوله، والحديث وعلومه، والقرآن وعلومه — كلٌّ مستقل بمنهجه ومتونه */
 export const wings: Record<WingId, Wing> = {
   fiqh: {
     id: "fiqh",
@@ -48,9 +49,20 @@ export const wings: Record<WingId, Wing> = {
     tracks: [mustalahTrack, hadithTrack],
     books: [],
   },
+  quran: {
+    id: "quran",
+    title: "القرآن وعلومه",
+    short: "القرآن",
+    tagline: "شرح المنظومة الجزرية في التجويد بيتاً بيتاً",
+    description: "يبدأ بالتجويد من خلال شرح المقدمة الجزرية كاملة: المخارج والصفات وأحكام التلاوة والوقف والرسم، مع أمثلة من القرآن الكريم.",
+    glyph: "ق",
+    hue: "var(--c-quran)",
+    tracks: [tajwidTrack],
+    books: [],
+  },
 };
 
-export const wingList: Wing[] = [wings.fiqh, wings.hadith];
+export const wingList: Wing[] = [wings.fiqh, wings.hadith, wings.quran];
 
 export type LessonEntry = {
   lesson: Lesson;
@@ -97,14 +109,16 @@ export const trackMeta: Record<TrackId, { hue: string; glyph: string; short: str
   usul: { hue: "var(--c-usul)", glyph: "أ", short: "الأصول" },
   hadith: { hue: "var(--c-hadith)", glyph: "ح", short: "الحديث" },
   mustalah: { hue: "var(--c-mustalah)", glyph: "م", short: "المصطلح" },
+  tajwid: { hue: "var(--c-quran)", glyph: "ت", short: "التجويد" },
 };
 
-/** مجموعات المتون في جناح الحديث، مأخوذة من دروس المسارين */
-export type MatnCollection = { id: string; title: string; author: string; kind: "verse" | "hadith"; items: { lessonId: string; title: string; text: string; source?: string }[] };
+/** مجموعات المتون المنظومة والمنثورة، مأخوذة من دروس المسارات */
+export type MatnCollection = { id: string; wing: WingId; title: string; author: string; kind: "verse" | "hadith"; items: { lessonId: string; title: string; text: string; source?: string }[] };
 
 export const matnCollections: MatnCollection[] = [
   {
     id: "bayquniyya",
+    wing: "hadith",
     title: "متن المنظومة البيقونية",
     author: "عمر بن محمد البيقوني",
     kind: "verse",
@@ -114,11 +128,22 @@ export const matnCollections: MatnCollection[] = [
   },
   {
     id: "arbain",
+    wing: "hadith",
     title: "متن الأربعين النووية",
     author: "يحيى بن شرف النووي",
     kind: "hadith",
     items: trackLessons("hadith")
       .filter((e) => e.lesson.matn?.kind === "hadith")
+      .map((e) => ({ lessonId: e.lesson.id, title: e.lesson.title, text: e.lesson.matn!.text, source: e.lesson.matn!.source })),
+  },
+  {
+    id: "jazariyya",
+    wing: "quran",
+    title: "متن المقدمة الجزرية",
+    author: "محمد بن الجزري",
+    kind: "verse",
+    items: trackLessons("tajwid")
+      .filter((e) => e.lesson.matn?.kind === "verse")
       .map((e) => ({ lessonId: e.lesson.id, title: e.lesson.title, text: e.lesson.matn!.text, source: e.lesson.matn!.source })),
   },
 ];

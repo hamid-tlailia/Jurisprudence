@@ -31,7 +31,10 @@ export function useChat(initial: ChatMessage[] = [], opts: { context?: string; m
           ctrl.signal,
         );
         if (acc) logAi();
-        else setMessages(history);
+        else {
+          setMessages(history.slice(0, -1));
+          if (!ctrl.signal.aborted) setError("لم يصل ردّ من المُعين هذه المرة، أعد إرسال سؤالك.");
+        }
       } catch (e) {
         setError((e as Error).message);
         setMessages(history.slice(0, -1));

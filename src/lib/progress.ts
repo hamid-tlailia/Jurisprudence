@@ -157,6 +157,13 @@ export const BADGES: Badge[] = [
     icon: "book-open",
     check: (s) => allLessons.filter((e) => /^h\d+$/.test(e.lesson.id)).every((e) => s.completedLessons[e.lesson.id]),
   },
+  {
+    id: "makharij",
+    title: "عارف بالمخارج",
+    description: "أتممت دروس مخارج الحروف السبعة عشر",
+    icon: "target",
+    check: (s) => ["jz2", "jz3", "jz4", "jz5", "jz6"].every((id) => s.completedLessons[id]),
+  },
   { id: "curious", title: "سؤول عقول", description: "طرحت عشرة أسئلة على المُعين", icon: "sparkles", check: (s) => s.aiQuestions >= 10 },
   { id: "plan-done", title: "وفيّ بالعهد", description: "أتممت خطة دراسية كاملة", icon: "medal", check: (s) => s.completedPlans.length >= 1 },
   { id: "xp-1000", title: "ألف نقطة", description: "جمعت ألف نقطة", icon: "star", check: (s) => s.xp >= 1000 },

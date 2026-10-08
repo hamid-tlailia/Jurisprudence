@@ -21,6 +21,7 @@ const FILTERS = [
   { id: "all", label: "الكل" },
   { id: "fiqh", label: "الفقه" },
   { id: "hadith", label: "الحديث" },
+  { id: "quran", label: "القرآن" },
 ] as const;
 
 export default function PlansPage() {

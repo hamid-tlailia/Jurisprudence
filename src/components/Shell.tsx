@@ -9,18 +9,21 @@ import { ThemeCycleButton } from "./ThemeSwitch";
 import { Bar } from "./ProgressRing";
 import { Logo } from "./Logo";
 import { SearchDialog } from "./SearchDialog";
+import { QuranIcon } from "./QuranIcon";
 
 const NAV = [
   { to: "/", label: "الرئيسية", Icon: Home, end: true },
   { to: "/wing/fiqh", label: "الفقه", Icon: BookOpenText },
   { to: "/wing/hadith", label: "الحديث", Icon: ScrollText },
+  { to: "/wing/quran", label: "القرآن", Icon: QuranIcon },
   { to: "/tutor", label: "المُعين", Icon: Sparkles },
   { to: "/plans", label: "الخطط", Icon: CalendarRange },
   { to: "/achievements", label: "الإنجازات", Icon: Award },
   { to: "/settings", label: "الإعدادات", Icon: Settings },
 ];
 
-const MOBILE = [NAV[0], NAV[1], NAV[2], NAV[3], NAV[5]];
+// على الجوال: الأجنحة الثلاثة والمُعين، والإنجازات في الشريط العلوي
+const MOBILE = [NAV[0], NAV[1], NAV[2], NAV[3], NAV[4]];
 
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
@@ -30,7 +33,7 @@ export function Brand({ compact = false }: { compact?: boolean }) {
         <div className="brand-name" style={compact ? { fontSize: "1.3rem" } : undefined}>
           رِواق
         </div>
-        {!compact && <div className="brand-sub">مدرسة الفقه والحديث</div>}
+        {!compact && <div className="brand-sub">مدرسة العلوم الشرعية</div>}
       </div>
     </div>
   );
@@ -99,6 +102,9 @@ export function Shell({ children }: { children: ReactNode }) {
               <Search size={19} />
             </button>
             <ThemeCycleButton />
+            <NavLink to="/achievements" className="icon-btn hide-lg" aria-label="الإنجازات">
+              <Award size={19} />
+            </NavLink>
             <NavLink to="/settings" className="icon-btn hide-lg" aria-label="الإعدادات">
               <Settings size={19} />
             </NavLink>

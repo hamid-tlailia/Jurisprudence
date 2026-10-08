@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AnimatePresence, motion, useScroll, useSpring } from "motion/react";
-import { ArrowLeft, ArrowRight, BookA, BookOpen, CheckCircle2, Clock, Dumbbell, Eye, FlaskConical, ListChecks, Share2, Sparkles, Text } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookA, BookOpen, CheckCircle2, Clock, Dumbbell, Eye, FlaskConical, ListChecks, ScanFace, Share2, Sparkles, Text } from "lucide-react";
 import { getLesson, getMasala, trackMeta, wingLessons, wings } from "../data";
 import { useStore } from "../lib/store";
 import { useAiPanel, AI_ACTIONS } from "../lib/aiPanel";
@@ -11,6 +11,7 @@ import { Quiz } from "../components/Quiz";
 import { Accordion } from "../components/Accordion";
 import { Verses } from "../components/Verses";
 import { ShareSheet } from "../components/ShareSheet";
+import { MakhrajExplorer } from "../components/MakhrajExplorer";
 import NotFound from "./NotFound";
 
 export default function LessonPage() {
@@ -110,6 +111,12 @@ export default function LessonPage() {
             </div>
             {lesson.matn.kind === "verse" ? <Verses text={lesson.matn.text} /> : <div className="matn">{lesson.matn.text}</div>}
           </section>
+        )}
+
+        {lesson.makharij && lesson.makharij.length > 0 && (
+          <Accordion title="الرسم التوضيحي للمخارج" icon={<ScanFace size={17} />} meta={num(lesson.makharij.length)} defaultOpen>
+            <MakhrajExplorer ids={lesson.makharij} />
+          </Accordion>
         )}
 
         {lesson.vocab && lesson.vocab.length > 0 && (

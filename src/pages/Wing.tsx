@@ -82,8 +82,9 @@ export default function WingPage() {
           {wing.books.map((b) => (
             <BookCard key={b.id} book={b} />
           ))}
-          {wing.id === "hadith" &&
-            matnCollections.map((c) => (
+          {matnCollections
+            .filter((c) => c.wing === wing.id)
+            .map((c) => (
               <Link key={c.id} to={`/matn/${c.id}`} className="card card-hover card-pad row" style={{ gap: 16 }}>
                 <div className="track-glyph" style={{ ["--hue" as string]: "var(--gold)" }}>
                   <BookMarked size={22} />

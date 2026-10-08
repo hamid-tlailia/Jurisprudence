@@ -1,3 +1,5 @@
+import type { MakhrajId } from "./makharij";
+
 export type Question = {
   q: string;
   options: string[];
@@ -22,6 +24,8 @@ export type Lesson = {
   minutes: number;
   summary: string;
   matn?: Matn;
+  /** مخارج يُعرض لها رسم توضيحي في الدرس */
+  makharij?: MakhrajId[];
   vocab?: Vocab[];
   sections: Section[];
   examples?: Example[];
@@ -34,8 +38,8 @@ export type Lesson = {
 
 export type Unit = { id: string; title: string; lessons: Lesson[] };
 
-export type WingId = "fiqh" | "hadith";
-export type TrackId = "fiqh" | "usul" | "hadith" | "mustalah";
+export type WingId = "fiqh" | "hadith" | "quran";
+export type TrackId = "fiqh" | "usul" | "hadith" | "mustalah" | "tajwid";
 
 export type Track = {
   id: TrackId;

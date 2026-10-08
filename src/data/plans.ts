@@ -73,6 +73,15 @@ export const plans: Plan[] = [
     days: chunk(ids("hadith"), 1),
   },
   {
+    id: "jazariyya",
+    title: "ختم الجزرية",
+    description: "درس كل يوم من شرح المقدمة الجزرية: المخارج مع رسومها التوضيحية، ثم الصفات والأحكام والوقف والرسم.",
+    wing: "quran",
+    level: "مبتدئ",
+    minutesPerDay: 12,
+    days: chunk(ids("tajwid"), 1),
+  },
+  {
     id: "foundations",
     title: "التأسيس الشامل",
     description: "ثلاثون يوماً متوازنة: درس من الفقه ودرس من الحديث كل يوم.",

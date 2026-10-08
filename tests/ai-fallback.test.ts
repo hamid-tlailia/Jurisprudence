@@ -27,7 +27,12 @@ beforeAll(async () => {
       if (model === "m-busy") {
         res.writeHead(503, { "content-type": "application/json" });
         res.end(JSON.stringify({ error: { code: 503, message: "overloaded", status: "UNAVAILABLE" } }));
-      } else if (model === "m-cut") sse(res, ["الجزء الأول، "], false);
+      } else if (model === "m-hang") {
+        res.writeHead(200, { "content-type": "text/event-stream" });
+        res.on("close", () => {});
+        setTimeout(() => res.destroy(), 5000);
+      } else if (model === "m-empty") sse(res, []);
+      else if (model === "m-cut") sse(res, ["الجزء الأول، "], false);
       else sse(res, ["والجزء الثاني."]);
     });
   });
@@ -54,5 +59,26 @@ describe("streamAnswer fallback", () => {
     const text = await new Response(streamAnswer("k", { messages: [{ role: "user", content: "سؤال" }] }, "m-busy", base)).text();
     expect(text).toContain("المُعين مشغول");
     expect(text).not.toMatch(/gemini|google/i);
+  });
+
+  it("moves on from a model that hangs or answers with nothing", async () => {
+    const { FALLBACK_MODELS, TIMEOUTS } = await import("../src/shared/ai-core");
+    TIMEOUTS.firstText = 300;
+    FALLBACK_MODELS.splice(0, FALLBACK_MODELS.length, "m-hang", "m-empty", "m-ok");
+    calls.length = 0;
+    const t0 = Date.now();
+    const text = await new Response(streamAnswer("k", { messages: [{ role: "user", content: "سؤال" }] }, "m-hang", base)).text();
+    expect(calls.map((c) => c.model)).toEqual(["m-hang", "m-empty", "m-ok"]);
+    expect(text).toBe("والجزء الثاني.");
+    expect(Date.now() - t0).toBeLessThan(3000);
+  });
+
+  it("asks for little thinking so answers start quickly", async () => {
+    const { FALLBACK_MODELS } = await import("../src/shared/ai-core");
+    FALLBACK_MODELS.splice(0, FALLBACK_MODELS.length, "gemini-3-test");
+    calls.length = 0;
+    await new Response(streamAnswer("k", { messages: [{ role: "user", content: "سؤال" }] }, "gemini-3-test", base)).text();
+    const cfg = (calls[0].body as unknown as { generationConfig: { thinkingConfig: unknown } }).generationConfig;
+    expect(cfg.thinkingConfig).toEqual({ thinkingLevel: "LOW" });
   });
 });
