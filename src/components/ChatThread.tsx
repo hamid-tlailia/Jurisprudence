@@ -56,11 +56,7 @@ export function ChatThread({ messages, streaming, error, onSend, onStop, empty, 
                 m.content ? (
                   <Markdown>{m.content}</Markdown>
                 ) : (
-                  <span className="typing" aria-label="يكتب">
-                    <span />
-                    <span />
-                    <span />
-                  </span>
+                  <Waiting />
                 )
               ) : (
                 <span style={{ whiteSpace: "pre-wrap" }}>{m.content}</span>
@@ -117,5 +113,28 @@ export function ChatThread({ messages, streaming, error, onSend, onStop, empty, 
         )}
       </form>
     </>
+  );
+}
+
+/** نقاط الكتابة، ومعها عبارة تطمين إذا طال الانتظار */
+function Waiting() {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSlow(true), 8000);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <span className="row" style={{ gap: 10 }}>
+      <span className="typing" aria-label="يكتب">
+        <span />
+        <span />
+        <span />
+      </span>
+      {slow && (
+        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="tiny muted">
+          يجمع المُعين إجابته…
+        </motion.span>
+      )}
+    </span>
   );
 }
