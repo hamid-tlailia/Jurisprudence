@@ -29,7 +29,8 @@ function ScrollToTop() {
 /** الروابط القديمة للمسارات تُحوَّل إلى الجناح المناسب */
 function TrackRedirect() {
   const { trackId } = useParams();
-  return <Navigate to={trackId === "hadith" || trackId === "mustalah" ? "/wing/hadith" : "/wing/fiqh"} replace />;
+  const wing = trackId === "hadith" || trackId === "mustalah" ? "hadith" : trackId === "tajwid" ? "quran" : "fiqh";
+  return <Navigate to={`/wing/${wing}`} replace />;
 }
 
 /** تحميل الصفحات مسبقاً في وقت الفراغ لتنقّل فوري */

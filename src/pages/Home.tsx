@@ -100,7 +100,7 @@ export default function Home() {
                 <span className="n">1</span>
                 <div>
                   <div style={{ fontWeight: 700 }}>اختر جناحاً</div>
-                  <div className="small muted">الفقه وأصوله، أو الحديث وعلومه. كل جناح منهج متدرج مستقل.</div>
+                  <div className="small muted">الفقه، أو الحديث، أو القرآن وتجويده. كل جناح منهج متدرج مستقل.</div>
                 </div>
               </div>
               <div className="start-step">
@@ -125,7 +125,7 @@ export default function Home() {
         <motion.div variants={stagger.item} className="row-between" style={{ marginTop: 8 }}>
           <h2 className="title-lg">{isNew ? "ابدأ من هنا" : "تابع رحلتك"}</h2>
         </motion.div>
-        <div className="grid-2">
+        <div className="grid-wings">
           {wingList.map((w) => (
             <motion.div key={w.id} variants={stagger.item}>
               <WingProgressCard wing={w} completed={completed} />

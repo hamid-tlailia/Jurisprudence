@@ -114,7 +114,7 @@ export function ShareSheet({ entry, open, onClose }: { entry: LessonEntry; open:
                 ))}
               </div>
               <div style={{ borderTop: "2px solid rgba(29,41,37,.1)", paddingTop: 24, fontSize: 22, color: "#7b847d", textAlign: "center" }}>
-                رواق — مدرسة الفقه والحديث
+                رواق — مدرسة العلوم الشرعية
               </div>
             </div>
           </div>,

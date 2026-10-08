@@ -1,3 +1,4 @@
+import { MAKHARIJ } from "../src/data/makharij";
 import { describe, expect, it } from "vitest";
 import { currentStreak, dayKey, evaluateBadges, initialProgress, levelFor, longestStreak, planProgress } from "../src/lib/progress";
 import { allLessons, books, getMasala, matnCollections, nextInWing, search, tracks, wingLessons } from "../src/data";
@@ -47,6 +48,24 @@ describe("content integrity", () => {
     const verses = matnCollections[0].items.flatMap((i) => i.text.split("\n")).filter((l) => !l.startsWith("..."));
     expect(verses).toHaveLength(34);
     expect(matnCollections[1].items).toHaveLength(42);
+  });
+  it("covers all 109 Jazariyya verses in order, one line per verse", () => {
+    const jz = matnCollections.find((c) => c.id === "jazariyya")!;
+    const seen: number[] = [];
+    for (const it of jz.items) {
+      const [from, to = from] = (it.source!.match(/\d+/g) ?? []).map(Number);
+      const lines = it.text.split("\n");
+      expect(lines.length, it.lessonId).toBe(to - from + 1);
+      for (const l of lines) expect(l, it.lessonId).toContain(" ... ");
+      for (let n = from; n <= to; n++) seen.push(n);
+    }
+    expect(seen).toEqual(Array.from({ length: 109 }, (_, i) => i + 1));
+    expect(wingLessons("quran")[0].lesson.id).toBe("jz1");
+  });
+  it("draws only known makharij", () => {
+    const known = new Set(MAKHARIJ.map((m) => m.id));
+    expect(known.size).toBe(17);
+    for (const { lesson } of allLessons) for (const id of lesson.makharij ?? []) expect(known.has(id), `${lesson.id}: ${id}`).toBe(true);
   });
   it("uses only Western digits in content", () => {
     const text = JSON.stringify(tracks) + JSON.stringify(books);

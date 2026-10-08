@@ -1,6 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
-import { getCollection } from "../data";
+import { getCollection, wings } from "../data";
 import { useStore } from "../lib/store";
 import { num } from "../lib/format";
 import { Verses } from "../components/Verses";
@@ -13,9 +13,9 @@ export default function MatnPage() {
   const completed = useStore((s) => s.completedLessons);
   if (!c) return <NotFound />;
   return (
-    <div className="page page-narrow" style={{ ["--hue" as string]: "var(--c-hadith)" }}>
-      <Link to="/wing/hadith?tab=texts" className="small muted row" style={{ gap: 4, marginBottom: 18 }}>
-        <ArrowRight size={14} /> الحديث وعلومه · المتون
+    <div className="page page-narrow" style={{ ["--hue" as string]: wings[c.wing].hue }}>
+      <Link to={`/wing/${c.wing}?tab=texts`} className="small muted row" style={{ gap: 4, marginBottom: 18 }}>
+        <ArrowRight size={14} /> {wings[c.wing].title} · المتون
       </Link>
       <header className="stack-sm" style={{ marginBottom: 24, textAlign: "center", alignItems: "center" }}>
         <h1 className="title-xl">{c.title}</h1>
